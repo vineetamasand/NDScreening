@@ -95,6 +95,14 @@ h1 {
     padding: 10px;
   }
 
+  /* Responsive: Keep them stacked & left aligned in small screens */
+@media (max-width: 600px) {
+  .field-group input,
+  .field-group select {
+    max-width: 100%;
+  }
+}
+
   table {
     font-size: 0.85rem;
   }
@@ -208,6 +216,8 @@ button:hover:not(:disabled) {
 .summary-table td:nth-child(3) {
   white-space: pre-wrap;
 }
+
+.summary-table td.unanswered { color: #b91c1c; font-weight: 700; }
 
 .summary-section textarea {
   width: 100%;
@@ -340,15 +350,43 @@ button:hover:not(:disabled) {
 }
 
 /* === Header Row === */
+/* .applicant-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: #333;
+} */
 .applicant-header-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   color: #333;
 }
+
+.applicant-header-row .field-group {
+  flex: 1 1 220px;   /* allow both fields to sit side-by-side */
+  min-width: 220px;
+}
+
+/* Mobile view: stack vertically without big gap */
+@media (max-width: 600px) {
+  .applicant-header-row {
+    flex-direction: column;
+    gap: 6px; /* much smaller vertical space */
+  }
+  .applicant-header-row .field-group {
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 6px; /* tighter spacing between Category & Token# */
+  }
+}
+
 
 .applicant-category select {
   padding: 6px;
@@ -381,7 +419,7 @@ button:hover:not(:disabled) {
 /* === Input Grid === */
 .applicant-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
   gap: 12px;
   margin-top: 16px;
 }
@@ -415,11 +453,152 @@ button:hover:not(:disabled) {
   .screening-input-group input {
     width: 100%;
   }
-
+ 
   .applicant-grid {
     grid-template-columns: 1fr;
   }
 }
+/* unanswered answer cell in summary table */
+.summary-table td.unanswered {
+  color: #b91c1c; /* red */
+  font-weight: 700;
+}
+
+/* Field group (label + input/select) */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.field-group label {
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.field-group input,
+.field-group select {
+  width: 100%;
+  max-width: none;
+  padding: 4px;
+}
+
+.token-input-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* --- Question option alignment --- */
+.question-option {
+  display: flex;            /* put radio + text on one line */
+  align-items: center;      /* vertically center both */
+  gap: 6px;                 /*space between radio and text*/
+  /* margin-bottom: 8px;       spacing between options */
+  width: 100%;
+  padding-left: 0;
+}
+
+.question-option input[type="radio"] {
+  margin: 0;                /* remove browser default offset */
+  flex-shrink: 0; 
+}
+
+/* Unified option layout: one per line, tidy wrapping */
+.option-row {
+  display: block;              /* forces a new line per option */
+  margin-bottom: 8px;
+}
+
+.option-label {
+  display: grid;               /* 2 columns: radio | text */
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 8px;
+  width: 100%;
+}
+
+.option-label input[type="radio"] {
+  margin: 0;                   /* remove default vertical offset */
+}
+
+.option-text {
+  line-height: 1.4;
+  word-break: break-word;      /* long words won’t break layout */
+}
+
+/* Question top row: question text left, decision right */
+.q-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap; /* stack on small screens */
+}
+
+.q-title .q-label {
+  margin-top: 4px;
+}
+
+/* Decision radio group inline */
+.decision-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.decision-title {
+  font-weight: 600;
+}
+
+.decision-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Option rows: one per line, tidy wrapping (you already use this pattern) */
+.option-row { display: block; margin-bottom: 8px; }
+
+.option-label {
+  display: grid;
+  grid-template-columns: auto 1fr; /* radio | text */
+  align-items: center;
+  column-gap: 8px;
+  width: 100%;
+}
+
+.option-label input[type="radio"] { margin: 0; }
+.option-text { line-height: 1.4; word-break: break-word; }
+
+/* ===== Summary category themes ===== */
+
+/* Default (no category match) stays as your current styling */
+
+/* === Summary category themes (override base section background) === */
+.theme-male .summary-section {
+  background: #efefef !important;   /* light grey */
+  border-color: #d1d5db !important;
+}
+
+.theme-female .summary-section {
+  background: #fff7a8 !important;   /* soft yellow */
+  border-color: #f0e68c !important;
+}
+
+/* Couple: alternate darker/lighter pink per section */
+.theme-couple .summary-section:nth-of-type(odd) {
+  background: #ffcfe0 !important;   /* darker pink */
+  border-color: #f5b0c8 !important;
+}
+.theme-couple .summary-section:nth-of-type(even) {
+  background: #ffe4ec !important;   /* lighter pink */
+  border-color: #f5cfe0 !important;
+}
+
+
 
 
 
