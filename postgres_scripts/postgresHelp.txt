@@ -1,0 +1,62 @@
+Here are the quickest ways to list tables in PostgreSQL.
+
+# to get into postgres shell
+docker exec -it postgres psql -U postgres -d postgres
+
+# In `psql` (the Postgres shell)
+
+Quit: \q
+
+Connection info: \conninfo
+
+List DBs: \l
+
+Switch DB: \c dbname
+
+List roles: \du
+
+```sql
+-- show tables in your current schema (usually "public")
+\dt
+
+-- include sizes, owners, etc.
+\dt+
+
+-- show tables in a specific schema
+\dt schema_name.*
+
+-- show *all* tables in all schemas (excluding system schemas)
+\dt *.*
+
+-- see schemas (so you know where to look)
+\dn
+
+-- describe a specific table (columns, types, indexes)
+\d+ table_name
+```
+
+# Pure SQL (works anywhere: app code, pgAdmin, DBeaver, etc.)
+
+```sql
+-- user-created tables (skip system schemas)
+SELECT table_schema, table_name
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE'
+  AND table_schema NOT IN ('pg_catalog', 'information_schema')
+ORDER BY table_schema, table_name;
+```
+
+Want columns for one table?
+
+```sql
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'your_table'
+ORDER BY ordinal_position;
+```
+
+# Handy notes
+
+* Connect to a DB first: `psql -h host -U user -d dbname`
+* Views: `\dv` (or query `information_schema.views`)
+* If you don’t see expected tables, check you’re in the right database (`\c`) and schema (`SET search_path TO schema_name;`).
