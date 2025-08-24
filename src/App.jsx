@@ -1,15 +1,25 @@
+// src/App.jsx
 import React, { useState } from 'react';
 import logo from './assets/RSSB.png';
 import './index.css';
 
+import WelcomeScreeningModule from './components/WelcomeScreeningModule.jsx';
+import WelcomeScreeningLogin from './components/WelcomeScreeningLogin.jsx';
+import ScreeningLevel1Home from './components/ScreeningLevel1Home.jsx';
 import ApplicantDetails from './components/ApplicantDetails.jsx';
 import ScreeningQuestions from './components/ScreeningQuestions.jsx';
 import ApplicantSummary from './components/ApplicantSummary.jsx';
 
 import questions from './questions';
-import dataService from './data/dataService';
+import dataService from './data/dataService'; // ensure filename case matches
 
 export default function App() {
+  // -------- High-level navigation: 'welcome' | 'sl1login' | 'sl1home' | 'flow'
+  const [screen, setScreen] = useState('welcome');
+  const [sessionId, setSessionId] = useState('MUM001234');
+  const [user, setUser] = useState(null); // { code, role } after login
+
+  // -------- Screening flow state
   // 0 = applicant details, 1..N = questions, N+1 = summary
   const [step, setStep] = useState(0);
   const [language, setLanguage] = useState('en');
@@ -75,6 +85,14 @@ export default function App() {
     console.log('Final decision:', val, 'Reason:', decisionReason);
   };
 
+  // -------- SL1 → Flow
+  const startFlowWithToken = (token) => {
+    if (!token || !token.trim()) return;
+    setScreeningNumber(token.trim());
+    setStep(0);           // land on Applicant Details
+    setScreen('flow');
+  };
+
   return (
     <>
       {/* Fixed Header */}
@@ -86,70 +104,128 @@ export default function App() {
       {/* Main Content */}
       <div className="app-content" style={{ marginTop: '60px' }}>
         {/* Language Toggle */}
-        <div style={{
-          marginBottom: '10px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
+        <div
+          style={{
+            marginBottom: '10px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <div>
-            <button onClick={() => setLanguage('en')} disabled={language === 'en'}>English</button>
-            <button onClick={() => setLanguage('hi')} disabled={language === 'hi'} style={{ marginLeft: '10px' }}>हिंदी</button>
+            <button type="button" onClick={() => setLanguage('en')} disabled={language === 'en'}>
+              English
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage('hi')}
+              disabled={language === 'hi'}
+              style={{ marginLeft: '10px' }}
+            >
+              हिंदी
+            </button>
           </div>
 
-          {step === questions.length + 1 && (
-            <button onClick={() => setStep(lastQuestionStep)}>
+          {/* Back-to-Questions only on Summary inside flow */}
+          {screen === 'flow' && step === TOTAL_QUESTIONS + 1 && (
+            <button type="button" onClick={() => setStep(lastQuestionStep)}>
               {language === 'en' ? '← Back to Questions' : 'प्रश्नों पर वापस'}
             </button>
-
           )}
         </div>
-        {/* Step 0: Applicant Details */}
-        {step === 0 && (
-          <ApplicantDetails
-            applicant={applicant}
-            setApplicant={setApplicant}
-            screeningNumber={screeningNumber}
-            setScreeningNumber={setScreeningNumber}
-            handleFetchApplicant={handleFetchApplicant}
-            nextStep={nextStep}
+
+        {/* ===== Top-level navigation ===== */}
+        {screen === 'welcome' && (
+          <WelcomeScreeningModule
+            sessionId={sessionId}
+            setSessionId={setSessionId}
+            onOpenSL1={() => setScreen('sl1login')}
           />
         )}
 
-        {/* Step 1..N: Questions */}
-        {TOTAL_QUESTIONS > 0 && step >= 1 && step <= TOTAL_QUESTIONS && (
-          <ScreeningQuestions
-            step={step}
-            language={language}
-            answers={answers}
-            setAnswers={setAnswers}
-            comments={comments}
-            setComments={setComments}
-            nextStep={nextStep}
-            prevStep={prevStep}
-            goToStep={goToStep}
-            openSummaryFrom={openSummaryFrom}
-            decisions={decisions}            
-            setDecisions={setDecisions}      
+        {screen === 'sl1login' && (
+          <WelcomeScreeningLogin
+            onBack={() => setScreen('welcome')}
+            onLoginSuccess={(u) => {
+              setUser(u);              // { code, role }
+              setScreen('sl1home');    // proceed to SL1 home
+            }}
           />
         )}
 
-        {/* Step N+1: Summary */}
-        {TOTAL_QUESTIONS > 0 && step === TOTAL_QUESTIONS + 1 && (
-          <ApplicantSummary
-            language={language}
-            screeningNumber={screeningNumber}
-            applicant={applicant}
-            answers={answers}
-            comments={comments}
-            checkOk={checkOk}
-            setCheckOk={setCheckOk}
-            decisionReason={decisionReason}
-            setDecisionReason={setDecisionReason}
-            setDecision={setDecision}
-            returnToLastQuestion={returnToLastQuestion}
-            decisions={decisions}
+        {screen === 'sl1home' && (
+          <ScreeningLevel1Home
+            onGoToken={(token) => {
+              if (!token?.trim()) return;
+              setScreeningNumber(token.trim());
+              setStep(0);           // ➜ ApplicantDetails
+              setScreen('flow');
+            }}
+            onStartScreening={(token) => {
+              if (!token?.trim()) return;
+              setScreeningNumber(token.trim());
+              setStep(0);           // ➜ ApplicantDetails
+              setScreen('flow');
+            }}
+            onRowGo={(row) => {
+              setScreeningNumber(row.token);
+              setStep(0);           // ➜ ApplicantDetails
+              setScreen('flow');
+            }}
           />
+        )}
+
+
+        {screen === 'flow' && (
+          <>
+            {/* Step 0: Applicant Details */}
+            {step === 0 && (
+              <ApplicantDetails
+                applicant={applicant}
+                setApplicant={setApplicant}
+                screeningNumber={screeningNumber}
+                setScreeningNumber={setScreeningNumber}
+                handleFetchApplicant={handleFetchApplicant}
+                nextStep={nextStep}
+              />
+            )}
+
+            {/* Step 1..N: Questions */}
+            {TOTAL_QUESTIONS > 0 && step >= 1 && step <= TOTAL_QUESTIONS && (
+              <ScreeningQuestions
+                step={step}
+                language={language}
+                answers={answers}
+                setAnswers={setAnswers}
+                comments={comments}
+                setComments={setComments}
+                nextStep={nextStep}
+                prevStep={prevStep}
+                goToStep={goToStep}
+                openSummaryFrom={openSummaryFrom}
+                decisions={decisions}
+                setDecisions={setDecisions}
+              />
+            )}
+
+            {/* Step N+1: Summary */}
+            {TOTAL_QUESTIONS > 0 && step === TOTAL_QUESTIONS + 1 && (
+              <ApplicantSummary
+                language={language}
+                screeningNumber={screeningNumber}
+                applicant={applicant}
+                answers={answers}
+                comments={comments}
+                checkOk={checkOk}
+                setCheckOk={setCheckOk}
+                decisionReason={decisionReason}
+                setDecisionReason={setDecisionReason}
+                setDecision={setDecision}
+                returnToLastQuestion={returnToLastQuestion}
+                decisions={decisions}
+              />
+            )}
+          </>
         )}
       </div>
     </>
