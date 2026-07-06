@@ -1,8 +1,8 @@
 // src/components/ScreeningQuestions.jsx
-import React from 'react';
-import questions from '../questions';
+import React from "react";
 
 export default function ScreeningQuestions({
+  questions = [],
   step,
   language,
   answers,
@@ -13,41 +13,47 @@ export default function ScreeningQuestions({
   prevStep,
   goToStep,
   openSummaryFrom,
-  decisions = [],
-  setDecisions,
+  checkOk = [],      // ✅ use checkOk instead of decisions
+  setCheckOk,
 }) {
   const q = questions[step - 1];
+
   if (!q) {
     return (
       <div>
-        <p style={{ color: 'red' }}>Invalid question step. Please go back.</p>
+        <p style={{ color: "red" }}>Invalid question step. Please go back.</p>
         {step > 1 && <button onClick={() => goToStep(1)}>Go to Question 1</button>}
       </div>
     );
   }
 
-  const setDecisionAt = (val) => {
-    if (!setDecisions) return;
-    setDecisions((prev) => {
+  const setCheckOkAt = (val) => {
+    if (!setCheckOk) return;
+    setCheckOk((prev) => {
       const copy = Array.isArray(prev) ? [...prev] : [];
-      copy[step - 1] = val; // "OK" or "Not OK"
+      copy[step - 1] = val; // "OK" or "NotOK"
       return copy;
     });
   };
 
+  // derive label + options
+  const label = language === "hi" ? (q.label_hi || q.label_en) : q.label_en;
+  const options = language === "hi" ? (q.options_hi || q.options_en) : q.options_en;
+  const optionsEn = q.options_en || [];
+
   return (
     <div>
-      {/* Header chips (Q2 onward) */}
+      {/* Header chips */}
       {step >= 2 && (
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
           {questions.slice(1).map((item, i) => {
-            const qStep = i + 2; // Q2 onward
-            const labelText = language === 'en' ? item.label : item.labelHi;
-            const isMarked = (decisions[qStep - 1] || '') === 'OK' || (decisions[qStep - 1] || '') === 'Not OK';
+            const qStep = i + 2;
+            const chipLabel = language === "hi" ? (item.label_hi || item.label_en) : item.label_en;
+            const isMarked = checkOk[qStep - 1] === "OK" || checkOk[qStep - 1] === "NotOK";
 
-            const bg = isMarked ? '#22c55e' : '#d1d5db';
-            const fg = isMarked ? '#ffffff' : '#111111';
-            const border = isMarked ? '#22c55e' : '#9ca3af';
+            const bg = isMarked ? "#22c55e" : "#d1d5db";
+            const fg = isMarked ? "#ffffff" : "#111111";
+            const border = isMarked ? "#22c55e" : "#9ca3af";
 
             return (
               <div
@@ -56,24 +62,24 @@ export default function ScreeningQuestions({
                 tabIndex={0}
                 onClick={() => goToStep(qStep)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') goToStep(qStep);
+                  if (e.key === "Enter" || e.key === " ") goToStep(qStep);
                 }}
                 style={{
-                  display: 'inline-block',
+                  display: "inline-block",
                   backgroundColor: bg,
                   color: fg,
                   border: `1px solid ${border}`,
-                  borderRadius: '9999px',
-                  padding: '6px 10px',
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  userSelect: 'none',
+                  borderRadius: "9999px",
+                  padding: "6px 10px",
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  userSelect: "none",
                   lineHeight: 1.2,
-                  whiteSpace: 'nowrap',
+                  whiteSpace: "nowrap",
                 }}
                 title={`Go to Question ${qStep}`}
               >
-                {labelText}
+                {chipLabel}
               </div>
             );
           })}
@@ -81,70 +87,67 @@ export default function ScreeningQuestions({
       )}
 
       {/* Current question */}
-      <h3>{language === 'en' ? `Question ${step}` : `प्रश्न ${step}`}</h3>
-      <p><strong>{language === 'en' ? q.label : q.labelHi}</strong></p>
+      <h3>{language === "en" ? `Question ${step}` : `प्रश्न ${step}`}</h3>
+      <p>
+        <strong>{label}</strong>
+      </p>
 
-      {/* Options (one per line) */}
-      {q.options.map((opt, i) => {
-        const labelText = language === 'en' ? opt.en : opt.hi;
+      {/* Options */}
+      {(options || []).map((optText, i) => {
+        const displayText = optText;
+        const storedEnglish = optionsEn[i] ?? optText;
         return (
           <div key={i} className="option-row">
             <label className="option-label">
               <input
                 type="radio"
                 name={`question-${step}`}
-                value={opt.en}
-                checked={answers[step - 1] === opt.en}
+                value={storedEnglish}
+                checked={answers[step - 1] === storedEnglish}
                 onChange={() => {
                   const updated = [...answers];
-                  updated[step - 1] = opt.en;
+                  updated[step - 1] = storedEnglish;
                   setAnswers(updated);
                 }}
               />
-              <span className="option-text">{labelText}</span>
+              <span className="option-text">{displayText}</span>
             </label>
           </div>
         );
       })}
 
-      {/* Decision (moved BELOW options, single line) */}
+      {/* Decision buttons */}
       <div
         className="decision-row"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '18px',
-          marginTop: '18px',
-          flexWrap: 'wrap',
-        }}
+        style={{ display: "flex", alignItems: "center", gap: "18px", marginTop: "18px", flexWrap: "wrap" }}
       >
         <span style={{ fontWeight: 700 }}>
-          {language === 'en' ? 'Decision' : 'निर्णय'}:
+          {language === "en" ? "Decision" : "निर्णय"}:
         </span>
         <button
           type="button"
-          onClick={() => setDecisionAt('OK')}
+          onClick={() => setCheckOkAt("OK")}
           style={{
-            padding: '6px 12px',
+            padding: "6px 12px",
             borderRadius: 6,
-            border: '1px solid #ccc',
-            background: decisions[step - 1] === 'OK' ? '#22c55e' : '#f3f4f6',
-            color: decisions[step - 1] === 'OK' ? '#fff' : '#111',
-            cursor: 'pointer',
+            border: "1px solid #ccc",
+            background: checkOk[step - 1] === "OK" ? "#22c55e" : "#f3f4f6",
+            color: checkOk[step - 1] === "OK" ? "#fff" : "#111",
+            cursor: "pointer",
           }}
         >
           OK
         </button>
         <button
           type="button"
-          onClick={() => setDecisionAt('Not OK')}
+          onClick={() => setCheckOkAt("NotOK")}
           style={{
-            padding: '6px 10px',
+            padding: "6px 10px",
             borderRadius: 6,
-            border: '1px solid #ccc',
-            background: decisions[step - 1] === 'Not OK' ? '#ef4444' : '#f3f4f6',
-            color: decisions[step - 1] === 'Not OK' ? '#fff' : '#111',
-            cursor: 'pointer',
+            border: "1px solid #ccc",
+            background: checkOk[step - 1] === "NotOK" ? "#ef4444" : "#f3f4f6",
+            color: checkOk[step - 1] === "NotOK" ? "#fff" : "#111",
+            cursor: "pointer",
           }}
         >
           Not OK
@@ -152,13 +155,13 @@ export default function ScreeningQuestions({
       </div>
 
       {/* Comment box */}
-      <div style={{ marginTop: '10px' }}>
+      <div style={{ marginTop: "10px" }}>
         <label>
-          {language === 'en' ? 'Comment (optional)' : 'टिप्पणी (ऐच्छिक)'}
+          {language === "en" ? "Comment (optional)" : "टिप्पणी (ऐच्छिक)"}
           <textarea
             rows="2"
-            style={{ width: '100%', marginTop: '5px' }}
-            value={comments[step - 1] || ''}
+            style={{ width: "100%", marginTop: "5px" }}
+            value={comments[step - 1] || ""}
             onChange={(e) => {
               const updated = [...comments];
               updated[step - 1] = e.target.value;
@@ -173,23 +176,23 @@ export default function ScreeningQuestions({
         <div className="button-group">
           <button
             onClick={() => {
-              const a0 = (answers[0] || '').trim().toLowerCase();
-              if (a0 === 'yes') {
-                openSummaryFrom(step); // jump to Summary
+              const a0 = (answers[0] || "").trim().toLowerCase();
+              if (a0 === "yes") {
+                openSummaryFrom(step);
               } else {
-                nextStep(); // go to Question 2
+                nextStep();
               }
             }}
           >
-            {step === questions.length ? 'Finish' : 'Next'}
+            {step === questions.length ? "Finish" : "Next"}
           </button>
         </div>
       )}
 
       {step >= 2 && (
-        <div style={{ marginTop: '20px' }}>
+        <div style={{ marginTop: "20px" }}>
           <button onClick={() => openSummaryFrom(step)}>
-            {language === 'en' ? 'Summary' : 'सारांश'}
+            {language === "en" ? "Summary" : "सारांश"}
           </button>
         </div>
       )}

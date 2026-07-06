@@ -1,11 +1,25 @@
+// src/components/WelcomeScreeningModule.jsx
 import React, { useEffect, useState } from 'react';
+import dataService from '../data/dataService';
 
 export default function WelcomeScreeningModule({
-  sessionId,
-  setSessionId,
-  onOpenSL1, // navigate to Screening Level 1 Home
+  onOpenSL1,
+  onOpenDataEntry,
 }) {
-  const isNarrow = useBreakpoint(768); // < 768px → single column buttons
+  const isNarrow = useBreakpoint(768);
+  const [sessionCd, setSessionCd] = useState('');
+
+  // ✅ fetch session_cd once at mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await dataService.getSessionCd(); // call backend
+        setSessionCd(s);
+      } catch (err) {
+        console.error('Failed to fetch session_cd', err);
+      }
+    })();
+  }, []);
 
   return (
     <div className="app-content" style={{ maxWidth: 980 }}>
@@ -13,8 +27,6 @@ export default function WelcomeScreeningModule({
       <div
         style={{
           margin: '0 auto 20px',
-          display: 'block',
-          width: isNarrow ? '100%' : 'auto',
           textAlign: 'center',
           background: '#12bcd6',
           color: '#fff',
@@ -27,7 +39,7 @@ export default function WelcomeScreeningModule({
         WELCOME TO SCREENING MODULE
       </div>
 
-      {/* Session row */}
+      {/* Session row (read-only) */}
       <div
         style={{
           display: 'flex',
@@ -39,15 +51,14 @@ export default function WelcomeScreeningModule({
       >
         <span style={{ fontWeight: 600 }}>Naamdaan Session #</span>
         <input
-          value={sessionId}
-          onChange={(e) => setSessionId(e.target.value)}
-          placeholder="e.g., MUM001234"
+          value={sessionCd}
+          readOnly
           style={{
             padding: '8px 10px',
             border: '1px solid #cbd5e1',
             borderRadius: 6,
             minWidth: 180,
-            background: '#fff',
+            background: '#f3f4f6',
             color: '#000',
             flex: isNarrow ? '1 1 220px' : '0 0 auto',
           }}
@@ -65,40 +76,21 @@ export default function WelcomeScreeningModule({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isNarrow
-              ? '1fr'
-              : 'repeat(3, minmax(180px, 1fr))',
+            gridTemplateColumns: isNarrow ? '1fr' : 'repeat(3, minmax(180px, 1fr))',
             gap: 18,
             justifyItems: 'center',
           }}
         >
-          <ModuleButton label="Data Entry" fullWidth={isNarrow} />
-          <ModuleButton
-            label="Screening Level1"
-            onClick={onOpenSL1}
-            fullWidth={isNarrow}
-          />
-          <ModuleButton label="SS" fullWidth={isNarrow} />
-
-          <ModuleButton label="Dera HOD" fullWidth={isNarrow} />
-          <ModuleButton label="Final Screening" fullWidth={isNarrow} />
+          <ModuleButton label="Data Entry" onClick={onOpenDataEntry} fullWidth={isNarrow} />
+          <ModuleButton label="Screening Level1" onClick={onOpenSL1} fullWidth={isNarrow} />
+          <ModuleButton label="Senior Screener" fullWidth={isNarrow} />
+          {/* <ModuleButton label="Dera HOD" fullWidth={isNarrow} /> */}
+          {/* <ModuleButton label="Final Screening" fullWidth={isNarrow} /> */}
           <ModuleButton label="HOD Screen" fullWidth={isNarrow} />
-
           <ModuleButton label="H/I" fullWidth={isNarrow} />
           <ModuleButton label="READ-ONLY" fullWidth={isNarrow} />
           <ModuleButton label="Reports" fullWidth={isNarrow} />
-
-          {/* Full-width bottom button */}
-          <div
-            style={{
-              gridColumn: isNarrow ? 'auto' : '1 / -1',
-              display: 'flex',
-              justifyContent: 'center',
-              width: '100%',
-            }}
-          >
-            <ModuleButton label="Dashboard" fullWidth />
-          </div>
+          <ModuleButton label="Dashboard" fullWidth={isNarrow} />
         </div>
       </div>
     </div>

@@ -1,62 +1,61 @@
+// src/components/ScreeningLevel1Home.jsx
 import React, { useEffect, useMemo, useState } from 'react';
+import dataService from '../data/dataService';
 
 export default function ScreeningLevel1Home({
   onGoToken = (token) => console.log('GO token:', token),
   onStartScreening = (token) => console.log('Start screening for token:', token),
   onRowGo = (row) => console.log('Row GO:', row),
 }) {
-  const isMobile = useBreakpoint(640);   // <640px → card list view
+  const isMobile = useBreakpoint(640);   // <640px → card view
   const isTablet = useBreakpoint(900);   // <900px → tighter layouts
 
-  // Top token entry
   const [tokenInput, setTokenInput] = useState('');
+  const [filters, setFilters] = useState({ category: '', status: '', tokenNo: '', name: '', wname: '' });
+  const [rows, setRows] = useState([]);
+  const [showSearch, setShowSearch] = useState(false);
 
-  // Search form state
-  const [filters, setFilters] = useState({
-    category: '',
-    status: '',
-    tokenNo: '',
-    name: '',
-    wname: '',
-  });
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await dataService.getApplicants();
+        setRows(data);
+      } catch (err) {
+        console.error("Failed to fetch applicants", err);
+      }
+    })();
+  }, []);
 
-  // Mock rows (replace with API data later)
-  const [rows] = useState([
-    { token: '18',  name: 'Aarav Mehta',               age: 43, category: 'Male',   location: 'Mumbai',                   status: 'Approve' },
-    { token: '59',  name: 'Baburao Waghmare',          age: 58, category: 'Male',   location: 'Pune',                     status: 'Wait'    },
-    { token: '110', name: 'Gautam Joshi',              age: 26, category: 'Male',   location: 'Maharashtra (Raigad)',     status: 'Wait'    },
-    { token: '185', name: 'Ramesh Chawla',             age: 58, category: 'Male',   location: 'Maharashtra (Jalgoan)',    status: 'Approve' },
-    { token: '215', name: 'Sunil Prakash Makhija',     age: 47, category: 'Male',   location: 'Maharashtra (Jangoan)',    status: 'SS'      },
-    { token: '015', name: 'Ravindra Sharma / Sushila', age: 26, category: 'Couple', location: 'Maharashtra (Jangoan)',    status: 'Wait'    },
-  ]);
+  // Sort latest first
+  const sortedRows = useMemo(() => {
+    return [...rows].sort((a, b) => (b.token > a.token ? 1 : -1));
+  }, [rows]);
 
-  // Apply filters locally
+  // Apply filters
   const filtered = useMemo(() => {
-    return rows.filter((r) => {
+    return sortedRows.filter((r) => {
       const f = filters;
       const byCategory = f.category ? r.category === f.category : true;
       const byStatus = f.status ? r.status === f.status : true;
-      const byToken = f.token && f.tokenNo
-        ? r.token.toLowerCase().includes(f.tokenNo.toLowerCase())
-        : f.tokenNo
-          ? r.token.toLowerCase().includes(f.tokenNo.toLowerCase())
-          : true;
+      const byToken = f.tokenNo ? r.token.toLowerCase().includes(f.tokenNo.toLowerCase()) : true;
       const byName = f.name ? r.name.toLowerCase().includes(f.name.toLowerCase()) : true;
-      const byWName = f.wname ? r.name.toLowerCase().includes(f.wname.toLowerCase()) : true; // placeholder
+      const byWName = f.wname ? r.name.toLowerCase().includes(f.wname.toLowerCase()) : true;
       return byCategory && byStatus && byToken && byName && byWName;
     });
-  }, [rows, filters]);
+  }, [sortedRows, filters]);
 
   // Summary counts
   const summary = useMemo(() => {
     return filtered.reduce(
       (acc, r) => {
-        if (r.status === 'Approve') acc.approve += 1;
-        else if (r.status === 'Wait') acc.wait += 1;
-        else if (r.status === 'SS') acc.ss += 1;
+        const status = (r.status || "").toUpperCase();
+        if (status === "APPROVE") acc.approve += 1;
+        else if (status === "WAIT") acc.wait += 1;
+        else if (status === "ROUTE") acc.route += 1;
+        else if (status === "IN_PROGRESS") acc.inProgress += 1;
         return acc;
       },
-      { approve: 0, wait: 0, ss: 0 }
+      { approve: 0, wait: 0, route: 0, inProgress: 0 }
     );
   }, [filtered]);
 
@@ -64,7 +63,7 @@ export default function ScreeningLevel1Home({
 
   return (
     <div className="app-content" style={{ maxWidth: 1100 }}>
-      {/* Header row (title + user) */}
+      {/* Header */}
       <div
         style={{
           display: 'flex',
@@ -92,7 +91,7 @@ export default function ScreeningLevel1Home({
         {!isMobile && <div style={{ fontWeight: 600 }}>SL1 Raghav Rajpal</div>}
       </div>
 
-      {/* Top token + Start + Summary */}
+      {/* Token input + Start + Summary */}
       <div
         style={{
           display: 'flex',
@@ -157,104 +156,112 @@ export default function ScreeningLevel1Home({
               <div style={{ fontWeight: 700, marginBottom: 6 }}>
                 SCREENING SUMMARY:
               </div>
-              <table style={{ borderCollapse: 'collapse', minWidth: 220, width: '100%' }}>
+              <table style={{ borderCollapse: 'collapse', minWidth: 320, width: '100%' }}>
                 <thead>
                   <tr>
                     <th style={thCell}>Approve</th>
                     <th style={thCell}>Wait</th>
-                    <th style={thCell}>SS</th>
+                    <th style={thCell}>Route</th>
+                    <th style={thCell}>In Progress</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td style={tdCellCenter}>{summary.approve}</td>
                     <td style={tdCellCenter}>{summary.wait}</td>
-                    <td style={tdCellCenter}>{summary.ss}</td>
+                    <td style={tdCellCenter}>{summary.route}</td>
+                    <td style={tdCellCenter}>{summary.inProgress}</td>
                   </tr>
                 </tbody>
               </table>
             </>
           ) : (
-            // Mobile: compact chips
             <div
               style={{
                 display: 'flex',
-                gap: 8,
+                gap: 12,
                 justifyContent: 'space-between',
                 marginTop: 8,
+                flexWrap: 'wrap',
               }}
             >
               <Chip label="Approve" value={summary.approve} color="#16a34a" />
               <Chip label="Wait" value={summary.wait} color="#f59e0b" />
-              <Chip label="SS" value={summary.ss} color="#0ea5e9" />
+              <Chip label="Route" value={summary.route} color="#3b82f6" />
+              <Chip label="InProg" value={summary.inProgress} color="#6b7280" />
             </div>
           )}
         </div>
       </div>
 
-      {/* Search Criteria box */}
-      <div
-        style={{
-          border: '1px solid #8bd2ea',
-          padding: 12,
-          borderRadius: 6,
-          marginBottom: 16,
-        }}
-      >
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>Search Criteria</div>
+      {/* Search toggle */}
+      <div style={{ marginBottom: 12 }}>
+        <button
+          type="button"
+          onClick={() => setShowSearch((s) => !s)}
+          style={{ minWidth: 160 }}
+        >
+          {showSearch ? "Hide Search" : "Show Search"}
+        </button>
+      </div>
 
-        {/* Responsive grid: auto-fit fields */}
+      {/* Search criteria */}
+      {showSearch && (
         <div
-          className="form-section"
           style={{
-            display: 'grid',
-            gridTemplateColumns: isTablet
-              ? 'repeat(2, minmax(0, 1fr))'
-              : 'repeat(4, minmax(0, 1fr))',
-            gap: 12,
-            alignItems: 'center',
+            border: '1px solid #8bd2ea',
+            padding: 12,
+            borderRadius: 6,
+            marginBottom: 16,
           }}
         >
-          <Field label="Category">
-            <select value={filters.category} onChange={setFilter('category')}>
-              <option value="">--</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Couple">Couple</option>
-            </select>
-          </Field>
+          <div style={{ fontWeight: 700, marginBottom: 10 }}>Search Criteria</div>
+          <div
+            className="form-section"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isTablet
+                ? 'repeat(2, minmax(0, 1fr))'
+                : 'repeat(4, minmax(0, 1fr))',
+              gap: 12,
+              alignItems: 'center',
+            }}
+          >
+            <Field label="Category">
+              <select value={filters.category} onChange={setFilter('category')}>
+                <option value="">--</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Couple">Couple</option>
+              </select>
+            </Field>
 
-          <Field label="Screening Status">
-            <select value={filters.status} onChange={setFilter('status')}>
-              <option value="">--</option>
-              <option value="Approve">Approve</option>
-              <option value="Wait">Wait</option>
-              <option value="SS">SS</option>
-            </select>
-          </Field>
+            <Field label="Screening Status">
+              <select value={filters.status} onChange={setFilter('status')}>
+                <option value="">--</option>
+                <option value="APPROVE">Approve</option>
+                <option value="WAIT">Wait</option>
+                <option value="ROUTE">Route</option>
+                <option value="IN_PROGRESS">In Progress</option>
+              </select>
+            </Field>
 
-          <Field label="Token No.">
-            <input value={filters.tokenNo} onChange={setFilter('tokenNo')} />
-          </Field>
+            <Field label="Token No.">
+              <input value={filters.tokenNo} onChange={setFilter('tokenNo')} />
+            </Field>
 
-          {/* spacer to balance 4-col layout; hidden on tablet/mobile */}
-          {!isTablet && <div />}
+            {!isTablet && <div />}
 
-          <Field label="Name" fullRow>
-            <input value={filters.name} onChange={setFilter('name')} />
-          </Field>
+            <Field label="Name" fullRow>
+              <input value={filters.name} onChange={setFilter('name')} />
+            </Field>
 
-          <Field label="W.Name" fullRow>
-            <input value={filters.wname} onChange={setFilter('wname')} />
-          </Field>
+            <Field label="W.Name" fullRow>
+              <input value={filters.wname} onChange={setFilter('wname')} />
+            </Field>
+          </div>
         </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-          <button type="button" onClick={() => { /* filtering is live */ }} style={{ minWidth: 140 }}>
-            SEARCH
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Results */}
       {!isMobile ? (
@@ -281,7 +288,11 @@ export default function ScreeningLevel1Home({
                   <td>{r.location}</td>
                   <td>{r.status}</td>
                   <td style={{ textAlign: 'center' }}>
-                    <button type="button" onClick={() => onRowGo(r)} style={{ padding: '6px 10px' }}>
+                    <button
+                      type="button"
+                      onClick={() => onRowGo(r)}
+                      style={{ padding: '6px 10px' }}
+                    >
                       GO
                     </button>
                   </td>
@@ -298,7 +309,6 @@ export default function ScreeningLevel1Home({
           </table>
         </div>
       ) : (
-        // Mobile card list
         <div style={{ display: 'grid', gap: 12 }}>
           {filtered.map((r) => (
             <div
@@ -310,17 +320,41 @@ export default function ScreeningLevel1Home({
                 background: '#fff',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+              {/* Row 1: Token + Status */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                 <strong>Token #{r.token}</strong>
                 <span style={{ fontWeight: 600 }}>{r.status}</span>
               </div>
-              <div style={{ fontSize: '0.95rem', marginBottom: 8 }}>
-                <div><strong>Name:</strong> {r.name}</div>
-                <div><strong>Age:</strong> {r.age} &nbsp;•&nbsp; <strong>Category:</strong> {r.category}</div>
-                <div><strong>Location:</strong> {r.location}</div>
+
+              {/* Row 2: Category | Name | Age */}
+              <div style={{ fontSize: '0.95rem', marginBottom: 6 }}>
+                {r.category} | <strong>{r.name}</strong> | Age: {r.age}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => onRowGo(r)} style={{ minWidth: 90 }}>
+
+              {/* Row 3: Location + GO */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '0.95rem',
+                }}
+              >
+                <div><strong>Location:</strong> {r.location}</div>
+                <button
+                  type="button"
+                  onClick={() => onRowGo(r)}
+                  style={{
+                    padding: '4px 12px',
+                    fontSize: '0.85rem',
+                    background: '#0ea5e9',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 4,
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   GO
                 </button>
               </div>
@@ -337,7 +371,7 @@ export default function ScreeningLevel1Home({
   );
 }
 
-/* Reusable field block */
+/* --- Reusable helpers --- */
 function Field({ label, children, fullRow }) {
   return (
     <div
@@ -359,21 +393,26 @@ function Chip({ label, value, color }) {
   return (
     <div
       style={{
-        flex: 1,
-        border: `1px solid ${color}`,
+        width: 70,
+        height: 70,
+        border: `2px solid ${color}`,
         color,
-        padding: '6px 10px',
-        borderRadius: 999,
-        textAlign: 'center',
+        borderRadius: "50%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
         fontWeight: 700,
+        fontSize: "0.8rem",
+        textAlign: "center",
       }}
     >
-      {label}: {value}
+      <div>{label}</div>
+      <div>{value}</div>
     </div>
   );
 }
 
-/** Simple breakpoint hook (client-only) */
 function useBreakpoint(px) {
   const [narrow, setNarrow] = useState(
     typeof window !== 'undefined' ? window.innerWidth < px : false
@@ -386,7 +425,6 @@ function useBreakpoint(px) {
   return narrow;
 }
 
-/* small table cell helpers */
 const thCell = {
   border: '1px solid #ccc',
   padding: '6px 10px',

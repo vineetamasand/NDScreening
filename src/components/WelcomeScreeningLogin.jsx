@@ -34,15 +34,16 @@ export default function WelcomeScreeningLogin({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 6,
           marginBottom: 16,
           flexWrap: 'wrap',
           justifyContent: 'center',
+          marginTop: -40,
         }}
       >
-        <button type="button" onClick={onBack} style={{ minWidth: 44 }}>
+        {/* <button type="button" onClick={onBack} style={{ minWidth: 44 }}>
           ⟵ Home
-        </button>
+        </button> */}
 
         <div
           style={{
@@ -71,28 +72,30 @@ export default function WelcomeScreeningLogin({
           background: '#fff',
         }}
       >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : '180px 1fr',
-            rowGap: 14,
-            columnGap: 14,
-            alignItems: 'center',
-          }}
-        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',   // rows stacked always
+              gap: 14,                   // consistent spacing between rows
+            }}
+          >
+
           {/* Screener Code */}
-          <label style={{ fontWeight: 600 }}>Screener Code</label>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 4 : 12, marginBottom: 6,  }}>
+          <label style={{ fontWeight: 600, minWidth: isMobile ? "auto" : 180 }}>Screener Code</label>
           <input
-            placeholder="SS001"
+            placeholder="Enter screener code"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             autoComplete="username"
-            style={{ padding: '10px', border: '1px solid #cbd5e1', borderRadius: 6 }}
+            style={{ padding: '10px', border: '1px solid #cbd5e1', borderRadius: 6,width: isMobile ? "100%" : "250px", }}
           />
+          </div>
 
           {/* Password */}
-          <label style={{ fontWeight: 600 }}>Password</label>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 4 : 12, marginBottom: 6, }}>
+          <label style={{ fontWeight: 600, minWidth: isMobile ? "auto" : 180  }}>Password</label>
+          <div style={{ display: 'flex', gap: 8, width: isMobile ? "100%" : "250px" }}>
             <input
               type={showPw ? 'text' : 'password'}
               placeholder="********"
@@ -100,23 +103,26 @@ export default function WelcomeScreeningLogin({
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               style={{
+                flex: 1,
                 padding: '10px',
                 border: '1px solid #cbd5e1',
                 borderRadius: 6,
-                width: '100%',
+                // width: '100%',
               }}
             />
             <button type="button" onClick={() => setShowPw((s) => !s)} style={{ minWidth: 80 }}>
               {showPw ? 'Hide' : 'Show'}
             </button>
-          </div>
+           </div>
+           </div>
 
           {/* Role */}
-          <label style={{ fontWeight: 600 }}>Role</label>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 4 : 12, marginBottom: 12, }}>
+          <label style={{ fontWeight: 600, minWidth: isMobile ? "auto" : 180 }}>Role</label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            style={{ padding: '10px', border: '1px solid #cbd5e1', borderRadius: 6 }}
+            style={{ padding: '10px', border: '1px solid #cbd5e1', borderRadius: 6,width: isMobile ? "100%" : "250px", }}
           >
             <option>Screener Level 1</option>
             <option>Senior Screener</option>
@@ -124,6 +130,7 @@ export default function WelcomeScreeningLogin({
             <option>H/I</option>
             <option>Read Only</option>
           </select>
+        </div>
         </div>
 
         {/* Submit */}
